@@ -1,0 +1,383 @@
+---
+title: "Will Stephen Curry Hit a Double-Double?"
+output: pdf_document
+---
+
+## Keywords
+
+**Double-Double** - A record of double digit numbers in at two offensive categories (Points, Blocks, Steals, Assists, Rebounds). \
+
+**Triple-Double** - A record of triple digit numbers in at two offensive categories (Points, Blocks, Steals, Assists, Rebounds). \
+
+**Performance Stats** - Referring to PTS, REB, STL, AST, BLK
+
+If a player achieves a Triple-Double or a Triple-Triple, we will consider these as in the same category as achieving a Double-Double. \
+
+
+
+## Introduction
+
+A Double-Double in the NBA is a difficult task to achieve and greatly increases the probability of winning if a player hits a Double-Double in a game. This statistics is of high importance to many sports betters out there because it is such a simple statistic to bet on. Either a player achieves a Double-Double or he doesn’t. However, since hitting a Double-Double is uncommon in most games, betting that a specific player will achieve a Double-Double and finding success in this bet is a sure way to gain a big sum of money. In general, the probability that a player will hit a Double-Double is fairly low and so the reward for successfully picking a player hitting a Double-Double is significantly greater than not hitting a Double-Double.
+
+The goal of this experiment is to calculate the probability of Stephen Curry hitting a Double-Double in the 2018 NBA Finals, Game 1 against Cleveland. The given data provides Curry's statistics for all of his games from his
+debut on 10/28/2009 to 10/29/2018. Although the outcome has already been observed, the focus of this experiment is to predict his performance as if the 2018 NBA Finals did not already happen. We will pretend that the 2018  Conference Finals has just finished and the next game played will be the 2018 NBA Finals, Game 1. After we calculate Curry's probability on achieving a Double-Double, we will compare our result with the actual outcome and check the accuracy of our model.
+
+There are two side questions that should also be considered and those are the *(i)* average count of PTS, AST, REB, STL and BLK per minutes played and *(ii)* the probability of achieving a Double-Double against each opponent. The graphs representing these statistics are provided below.
+
+The model that will be used is the logistic regression model with the response variable outputting 1 if Curry has achieved a Double-Double and 0 otherwise. The predictor variables that will be taken into account are Points, Rebounds, Assists, Blocks, Steals, Opponent, and the number of minutes played in each game.
+
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+
+curry_stats_original <- read_excel("C:/Users/jacob/Desktop/STA304 Final Project/Stephen Curry Stats.xlsx") # Import file
+
+curry_stats <- head(curry_stats_original, -17) # Remove observations from 2018 NBA Finals , Game 1 and after
+
+for (i in (1:dim(curry_stats)[1])){            # Clean up Data
+  if (curry_stats$`Total 3 Points`[i]==0){
+    curry_stats$`Total 3 Points`[i] <- 1
+  }
+}
+
+for (i in (1:dim(curry_stats)[1])){
+  if (curry_stats$`Total Shots`[i]==0){
+    curry_stats$`Total Shots`[i] <- 1
+  }
+}
+
+for (i in (1:dim(curry_stats))) # 1 if Double-Double achieved, 0 otherwise
+  if (curry_stats$PTS[i] >= 10 && curry_stats$STL[i] >= 10 ||
+      curry_stats$PTS[i] >= 10 && curry_stats$AST[i] >= 10 ||
+      curry_stats$PTS[i] >= 10 && curry_stats$REB[i] >= 10 ||
+      curry_stats$PTS[i] >= 10 && curry_stats$BLK[i] >= 10 ||
+      curry_stats$REB[i] >= 10 && curry_stats$AST[i] >= 10 ||
+      curry_stats$REB[i] >= 10 && curry_stats$BLK[i] >= 10 ||
+      curry_stats$REB[i] >= 10 && curry_stats$STL[i] >= 10 ||
+      curry_stats$AST[i] >= 10 && curry_stats$BLK[i] >= 10 ||
+      curry_stats$AST[i] >= 10 && curry_stats$STL[i] >= 10 ||
+      curry_stats$STL[i] >= 10 && curry_stats$BLK[i] >= 10){
+    curry_stats$Result[i] <- 1
+  } else {
+      curry_stats$Result[i] <- 0
+    }
+
+
+c_stats_pre <- curry_stats %>%
+  select(Opponent,Dates, REB, AST, BLK, STL, PTS, Result, Minutes)
+c_stats_pre$Result <- as.numeric(c_stats_pre$Result)
+
+c_stats <- c_stats_pre %>% 
+  filter(c_stats_pre$Minutes >= 1) # Remove games where Curry did not play
+
+c_stats <- tail(c_stats, -184) # Remove games before 10/31/2012
+# View(c_stats) 
+
+#############################
+
+season_1 <- c_stats[c(1:90),c(1:9)] # 10/31/2012 -> 5/16/2013
+season_2 <- c_stats[c(97:182),c(1:9)] # 10/30/2013 -> 5/3/2014
+season_3 <- c_stats[c(190:291),c(1:9)] # 10/29/2014 -> 6/16/2015
+season_4 <- c_stats[c(298:395),c(1:9)] # 10/27/2015 -> 6/19/2016
+season_5 <- c_stats[c(403:499),c(1:9)] # 10/25/2016 -> 6/12/2017
+season_6 <- c_stats[c(504:566),c(1:9)] # 10/17/2017 -> 5/28/2018
+
+# Combined data frame of season 1 - 6; excludes all other games 
+comp_stats <- rbind(season_1, season_2, season_3, season_4, season_5, season_6)
+
+s1_dd <- season_1 %>%
+  filter(season_1$PTS < 10 && season_1$Result == 1)
+# dim(s1_dd)[1] # 0
+s2_dd <- season_2 %>%
+  filter(season_2$PTS < 10 && season_2$Result == 1)
+# dim(s2_dd)[1] # 0
+s3_dd <- season_3 %>%
+  filter(season_3$PTS < 10 && season_3$Result == 1)
+# dim(s3_dd)[1] # 0
+s4_dd <- season_4 %>%
+  filter(season_4$PTS < 10 && season_4$Result == 1)
+# dim(s4_dd)[1] # 0
+s5_dd <- season_5 %>%
+  filter(season_5$PTS < 10 && season_5$Result == 1)
+# dim(s5_dd)[1] # 0 
+s6_dd <- season_6 %>%
+  filter(season_6$PTS < 10 && season_6$Result == 1)
+# dim(s6_dd)[1] # 0
+
+avg_played <- mean(comp_stats$Minutes)
+# avg_played # 35.05037
+
+num_dd <- comp_stats %>%
+  filter(comp_stats$Result == 1)
+avg_min_played <- mean(num_dd$Minutes) # 36.61818
+num_dd_perc <- dim(num_dd)[1]/dim(c_stats)[1] # 0.1943463
+
+num_not_dd <- comp_stats %>%
+  filter(comp_stats$Result == 0)
+avg_mind_played1 <- mean(num_not_dd$Minutes) # 34.64554
+num_not_dd_perc <- dim(num_not_dd)[1]/dim(comp_stats)[1] # 0.7947761
+
+# Safe to assume Double-Double can only be achieved when PTS >= 10
+# PTS is predictor
+
+##############################
+
+stuff1 <- comp_stats %>%
+  group_by(Minutes, PTS) %>%
+  summarize(w1=n())
+
+random1 <- stuff1 %>%
+  group_by(Minutes) %>%
+  summarize(total_pts = mean(PTS))
+
+thing1 <- stuff1 %>%
+  group_by(Minutes) %>%
+  summarize(z1=n()) %>%
+  add_column(random1$total_pts)
+
+avg_per_min1 <- as.numeric(format(thing1$`random1$total_pts`/thing1$z1, digit=2))
+thing1 <- thing1 %>%
+  add_column(avg_per_min1)
+
+####
+
+stuff2 <- comp_stats %>%
+  group_by(Minutes, REB) %>%
+  summarize(w2=n())
+
+random2 <- stuff2 %>%
+  group_by(Minutes) %>%
+  summarize(total_reb = mean(REB))
+
+thing2 <- stuff2 %>%
+  group_by(Minutes) %>%
+  summarize(z2=n()) %>%
+  add_column(random2$total_reb)
+
+avg_per_min2 <- as.numeric(format(thing2$`random2$total_reb`/thing2$z2, digit=2))
+thing2 <- thing2 %>%
+  add_column(avg_per_min2)
+
+####
+
+stuff3 <- comp_stats %>%
+  group_by(Minutes, AST) %>%
+  summarize(w3=n())
+
+random3 <- stuff3 %>%
+  group_by(Minutes) %>%
+  summarize(total_ast = mean(AST))
+
+thing3 <- stuff3 %>%
+  group_by(Minutes) %>%
+  summarize(z3=n()) %>%
+  add_column(random3$total_ast)
+
+avg_per_min3 <- as.numeric(format(thing3$`random3$total_ast`/thing3$z3, digit=2))
+thing3 <- thing3 %>%
+  add_column(avg_per_min3)
+
+####
+
+stuff4 <- comp_stats %>%
+  group_by(Minutes, STL) %>%
+  summarize(w4=n())
+
+random4 <- stuff4 %>%
+  group_by(Minutes) %>%
+  summarize(total_stl = mean(STL))
+
+thing4 <- stuff4 %>%
+  group_by(Minutes) %>%
+  summarize(z4=n()) %>%
+  add_column(random4$total_stl)
+
+avg_per_min4 <- as.numeric(format(thing4$`random4$total_stl`/thing4$z4, digit=2))
+thing4 <- thing4 %>%
+  add_column(avg_per_min4)
+
+####
+
+stuff5 <- comp_stats %>%
+  group_by(Minutes, BLK) %>%
+  summarize(w5=n())
+
+random5 <- stuff5 %>%
+  group_by(Minutes) %>%
+  summarize(total_blk = mean(BLK))
+
+thing5 <- stuff5 %>%
+  group_by(Minutes) %>%
+  summarize(z5=n()) %>%
+  add_column(random5$total_blk)
+
+avg_per_min5 <- as.numeric(format(thing5$`random5$total_blk`/thing5$z5, digit=2))
+thing5 <- thing5 %>%
+  add_column(avg_per_min5)
+
+##############################
+
+# ggplot() +  # plot of Average Count per Minutes Played
+#   geom_point(data=thing1, aes(x=Minutes, y=avg_per_min1), colour="black", alpha = 0.5) + 
+#   geom_point(data=thing2, aes(x=Minutes, y=avg_per_min2), colour = "red", alpha = 0.5) +
+#   geom_point(data=thing3, aes(x=Minutes, y=avg_per_min3), colour = "blue", alpha = 0.5) +
+#   geom_point(data=thing4, aes(x=Minutes, y=avg_per_min4), colour = "green", alpha = 0.5) +
+#   geom_point(data=thing5, aes(x=Minutes, y=avg_per_min5), colour = "yellow", alpha = 0.5) +
+#   geom_smooth(aes(x=Minutes,y=avg_per_min1), data=thing1, method="loess", colour="black", size=0.1, alpha=0) +
+#   geom_smooth(aes(x=Minutes,y=avg_per_min2), data=thing2, method="loess", colour="red", size=0.1, alpha=0) +
+#   geom_smooth(aes(x=Minutes,y=avg_per_min3), data=thing3, method="loess", colour="blue", size=0.1, alpha=0) +
+#   geom_smooth(aes(x=Minutes,y=avg_per_min4), data=thing4, method="loess", colour="green", size=0.1, alpha=0) +
+#   geom_smooth(aes(x=Minutes,y=avg_per_min5), data=thing5, method="loess", colour="yellow", size=0.1, alpha=0) +
+#   ylim(0,50) +
+#   geom_hline(yintercept=10, linetype="dashed", alpha=0.5) +
+#   ylab("Average per Minute") +
+#   xlab("Minutes Played") + 
+#   ggtitle("Average Count per Minutes Played")
+
+##############################
+
+test <- comp_stats %>%
+  group_by(Opponent, Result) %>%
+  summarize(count=n()) %>%
+  filter(Result == 1)
+
+test1 <- comp_stats %>%
+  group_by(Opponent) %>%
+  filter(Opponent != "LEB") %>%
+  summarize(count1=n())
+
+dd_prob <- as.numeric(format(test$count / test1$count1, digits = 1))
+
+test3 <- test %>%
+  add_column(dd_prob)
+
+# ggplot() + # Plot of probability of hitting double-double against each opponent
+#   geom_point(data=test3, aes(x=Opponent, y=dd_prob)) + 
+#   ylim(0,1) + 
+#   geom_hline(yintercept=mean(dd_prob), linetype="dashed", color = "red", size = 0.5, alpha=0.5) +
+#   ylab("Double-Double Percentage") +
+#   xlab("Opponent") +
+#   theme(axis.text.x = element_text(angle = 90))
+
+################################
+
+avg_mins_played <- mean(comp_stats$Minutes)
+
+final_model <- glm(Result ~ Minutes + Opponent + PTS + AST + BLK + STL + REB, data=comp_stats, family=binomial())
+# summary(final_model)
+
+newdata <- data.frame(Minutes = avg_mins_played, 
+                      Opponent = "CLE", PTS=mean(comp_stats$PTS), 
+                      AST=mean(comp_stats$AST), 
+                      BLK=mean(comp_stats$BLK), 
+                      STL=mean(comp_stats$STL), 
+                      REB=mean(comp_stats$REB))
+predicted_dd <- predict(final_model, newdata, type="response")
+# predicted_dd # 0.2604497 
+
+
+aaaaa <- glm(Result ~ Minutes + Opponent, data=comp_stats, family=binomial())
+newdata1 <- data.frame(Minutes = avg_mins_played, 
+                      Opponent = "CLE")
+predict <- predict(aaaaa, newdata, type="response")
+
+
+
+
+# ggplot() +
+#   geom_point(aes(x=comp_stats$Minutes, y=comp_stats$Result, group=comp_stats$Opponent, color=comp_stats$Opponent), alpha=0.25) +
+#   geom_smooth(aes(x=comp_stats$Minutes, y=comp_stats$Result, group=comp_stats$Opponent, color=comp_stats$Opponent),  method.args = list(family = "binomial"), method="glm", alpha=0.05,size=0.5) +
+#   xlab("Minutes Played") +
+#   ylab("Result") +
+#   ggtitle("Logistic Regression Model") +
+#   geom_hline(yintercept=0.5, alpha=0.75, linetype="dashed")
+###############################
+```
+
+\newpage
+## Methodology
+
+The raw data provided consists of several variables (Dates, Opponent, Score, Minutes, Successful Shots, Total Shots, 3 Points Successful, Total 3 Points, Successful FT, Total FT, REB, AST, BLK, STL, PF, TO, PTS, Type, Result, Score GS, and Score Opponent). However, the only variables that will be taken into consideration are Opponent, Minutes, PTS, REB, AST, BLK, and STL. Additionally, all games recorded on and after 5/31/2018 will be removed as well. Lastly, the data has been split into six different seasons (as there are games between the Finals and the first season game) and has been merged so that our data only consists of these six seasons. Data cleaning is complete at this point.
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+ggplot() +  # plot of Average Count per Minutes Played
+  geom_point(data=thing1, aes(x=Minutes, y=avg_per_min1), colour="black", alpha = 0.5) + 
+  geom_point(data=thing2, aes(x=Minutes, y=avg_per_min2), colour = "red", alpha = 0.5) +
+  geom_point(data=thing3, aes(x=Minutes, y=avg_per_min3), colour = "blue", alpha = 0.5) +
+  geom_point(data=thing4, aes(x=Minutes, y=avg_per_min4), colour = "green", alpha = 0.5) +
+  geom_point(data=thing5, aes(x=Minutes, y=avg_per_min5), colour = "yellow", alpha = 0.5) +
+  geom_smooth(aes(x=Minutes,y=avg_per_min1), data=thing1, method="loess", colour="black", size=0.1, alpha=0) +
+  geom_smooth(aes(x=Minutes,y=avg_per_min2), data=thing2, method="loess", colour="red", size=0.1, alpha=0) +
+  geom_smooth(aes(x=Minutes,y=avg_per_min3), data=thing3, method="loess", colour="blue", size=0.1, alpha=0) +
+  geom_smooth(aes(x=Minutes,y=avg_per_min4), data=thing4, method="loess", colour="green", size=0.1, alpha=0) +
+  geom_smooth(aes(x=Minutes,y=avg_per_min5), data=thing5, method="loess", colour="yellow", size=0.1, alpha=0) +
+  ylim(0,50) +
+  geom_hline(yintercept=10, linetype="dashed", alpha=0.5) +
+  ylab("Average per Minute") +
+  xlab("Minutes Played") + 
+  ggtitle("(i) Average Count per Minutes Played")
+```
+
+The importance of *(i)* is that it shows the expected mean for each variable at different numbers of minutes played. As we can see from the graph, it shows that regardless of the minutes played, Curry's performance stats average is below double-digits. This suggests that the probability of Curry hitting a Double-Double is lower than the probability of not hitting a Double-Double. 
+
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+ggplot() + # Plot of probability of hitting double-double against each opponent
+  geom_point(data=test3, aes(x=Opponent, y=dd_prob)) + 
+  ylim(0,1) + 
+  geom_hline(yintercept=mean(dd_prob), linetype="dashed", color = "red", size = 0.5, alpha=0.5) +
+  ylab("Double-Double Percentage") +
+  xlab("Opponent") +
+  theme(axis.text.x = element_text(angle = 90))+
+  ggtitle("(ii) Probability of Double-Double Against each Opponent")
+```
+On the other hand, *(ii)* shows the probability of hitting a Double-Double against each team based on games prior to the 2018 NBA Finals, game 1. The dotted red line is the average probability of hitting a Double-Double against all teams. Observe that most probabilities lie below the average with only one being greater than 0.5; the probability of hitting a Double-Double against Indiana is roughly 0.55. Since the 2018 NBA Finals, Game 1 is against Cleveland, the  probability against Indiana is irrelevant. However, this graph shows that the probability of hitting a Double-Double against any opponent is fairly low. 
+
+Combining observations of *(i)* and *(ii)*, it suggests that achieving a Double-Double in any game is low, including the 2018 NBA Finals, Game 1. This is consistent with the logistic regression model we have constructed and will be discussed in the following paragraph.
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+ggplot() + 
+  geom_point(aes(x=comp_stats$Minutes, y=comp_stats$Result, group=comp_stats$Opponent, color=comp_stats$Opponent), alpha=0.25) + 
+  geom_smooth(aes(x=comp_stats$Minutes, y=comp_stats$Result, group=comp_stats$Opponent, color=comp_stats$Opponent),  method.args = list(family = "binomial"), method="glm", alpha=0.05,size=0.5) +
+  xlab("Minutes Played") +
+  ylab("Result") +
+  ggtitle("Logistic Regression Model") +
+  geom_hline(yintercept=0.5, alpha=0.75, linetype="dashed")
+```
+ 
+The last step in our study is to formulate our logistic regression model where our response is a binary output with predictor variables Minutes, Opponent, PTS, REB, AST, STL, and BLK. The graph below shows the logistic regression probability where the x-axis is the number of minutes played and the different colours represent all of the different opponents. For some opponents, very few games were recorded and and can be distinguished by the straightness of each line. The straighter the line, the less observations against that particular team were recorded. The dotted black line is the threshold in  which we decide whether or not a Double-Double will be achieved. In short, if the observation is above this line, then Curry will achieve a Double-Double. 
+
+\newpage
+## Results
+
+To make our prediction, it will be assumed that Curry will be playing an average number of minutes with average performance stats against the Cleveland Cavaliers. Based on our logistic model, we estimate that the probability Stephen Curry will achieve a Double-Double in the 2018 NBA Finals, Game 1 against Cleveland is 0.0227. This is consistent with our other observations in that the probability of Curry achieving a Double-Double is fairly low in most aspects. 
+
+
+## Discussion
+
+**Weaknesses:**\
+
+One weakness this logistic regression model has is that there are many factors that affect Stephen Curry's performance outside of the variables mentioned. For example, a change in diet can affect his energy levels in a game, causing him to play better or worse. Or another example is Curry's mental state; if his head is in the game, it may cause him to perform better than if his mind was elsewhere. Strictly speaking, there are many uncontrollable factors outside the game of basketball that affect Curry's performance and taking these factors into account makes our model significantly more difficult to be accurate. As a "band-aid" solution to this problem, we assumed that Curry will perform at an average level with average stats to make our prediction.
+
+**Strengths:**
+
+One strength this logistic regression model has is that it is consistent with other observations such that the calculated probability of Curry achieving a Double-Double is low. This is also consistent with the actual recorded observation of the 2018 NBA Finals, Game 1 against Cleveland in which Curry did not achieve a Double-Double.
+
+\newpage
+## References
+
+- Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686, https://doi.org/10.21105/joss.01686
+
+- H. Wickham. ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York, 2016.
+
+- Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2020). dplyr: A Grammar of Data Manipulation. R package version 1.0.2. https://CRAN.R-project.org/package=dplyr
+
+- Stephen Curry Stats: https://data.world/datatouille/stephen-curry-stats
+
+
+
+
+
